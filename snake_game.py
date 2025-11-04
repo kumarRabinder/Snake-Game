@@ -5,13 +5,13 @@ import sys
 # Initialize pygame
 pygame.init()
 
-# Screen settings
+# ---------------- Screen Settings ----------------
 WIDTH, HEIGHT = 800, 600
 CELL_SIZE = 20
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("🐍 Snake Game with Obstacles")
 
-# Colors
+# ---------------- Colors ----------------
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 DARK_GREEN = (0, 155, 0)
@@ -21,37 +21,46 @@ GRAY = (100, 100, 100)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 
+# Font and Clock
 font = pygame.font.SysFont("comicsansms", 35)
 clock = pygame.time.Clock()
 
-# Draw snake
+
+# ---------------- Function to Draw the Snake ----------------
 def draw_snake(snake_body):
     for segment in snake_body:
         pygame.draw.rect(screen, GREEN, (segment[0], segment[1], CELL_SIZE, CELL_SIZE))
         pygame.draw.rect(screen, DARK_GREEN, (segment[0], segment[1], CELL_SIZE, CELL_SIZE), 1)
 
-# Generate random food position
+
+# ---------------- Generate Random Food Position ----------------
 def random_food_position(snake_body, obstacles):
     while True:
-        x = random.randrange(0, WIDTH // CELL_SIZE) * CELL_SIZE
-        y = random.randrange(0, HEIGHT // CELL_SIZE) * CELL_SIZE
+        # Prevent food from spawning on walls
+        x = random.randrange(1, (WIDTH // CELL_SIZE) - 1) * CELL_SIZE
+        y = random.randrange(1, (HEIGHT // CELL_SIZE) - 1) * CELL_SIZE
         food_rect = pygame.Rect(x, y, CELL_SIZE, CELL_SIZE)
+
+        # Check collision with obstacles or snake body
         if all(not food_rect.colliderect(pygame.Rect(o[0], o[1], CELL_SIZE, CELL_SIZE)) for o in obstacles) and [x, y] not in snake_body:
             return [x, y]
 
-# Show text
+
+# ---------------- Function to Display Text ----------------
 def draw_text(text, color, y_offset=0, size=35):
     font_obj = pygame.font.SysFont("comicsansms", size)
     label = font_obj.render(text, True, color)
     rect = label.get_rect(center=(WIDTH // 2, HEIGHT // 2 + y_offset))
     screen.blit(label, rect)
 
-# Show score
+
+# ---------------- Function to Show Score ----------------
 def show_score(score):
     label = font.render("Score: " + str(score), True, BLUE)
     screen.blit(label, (10, 10))
 
-# Game over
+
+# ---------------- Game Over Screen ----------------
 def game_over_screen(score):
     screen.fill(GRAY)
     draw_text("GAME OVER", RED, -50, 50)
@@ -71,14 +80,16 @@ def game_over_screen(score):
                     pygame.quit()
                     sys.exit()
 
-# Main game loop
+
+# ---------------- Main Game Loop ----------------
 def game_loop():
+    # Initial snake setup
     snake_pos = [100, 100]
     snake_body = [[100, 100], [80, 100], [60, 100]]
     direction = 'RIGHT'
     change_to = direction
 
-    # --- Walls ---
+    # --- Create Walls ---
     walls = []
     for x in range(0, WIDTH, CELL_SIZE):
         walls.append([x, 0])
@@ -87,7 +98,7 @@ def game_loop():
         walls.append([0, y])
         walls.append([WIDTH - CELL_SIZE, y])
 
-    # --- Stones (obstacles) ---
+    # --- Create Random Obstacles (Stones) ---
     stones = []
     for _ in range(8):
         x = random.randrange(WIDTH // 4, 3 * WIDTH // 4, CELL_SIZE)
@@ -95,16 +106,19 @@ def game_loop():
         if [x, y] not in snake_body and [x, y] not in walls:
             stones.append([x, y])
 
+    # --- Generate First Food Position ---
     food_pos = random_food_position(snake_body, stones)
     score = 0
     speed = 10
 
+    # --- Main Loop ---
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
+            # Direction control
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP and direction != 'DOWN':
                     change_to = 'UP'
@@ -117,7 +131,7 @@ def game_loop():
 
         direction = change_to
 
-        # Move snake
+        # --- Move Snake ---
         if direction == 'UP':
             snake_pos[1] -= CELL_SIZE
         elif direction == 'DOWN':
@@ -129,7 +143,7 @@ def game_loop():
 
         snake_body.insert(0, list(snake_pos))
 
-        # Check if food eaten
+        # --- Check Food Collision ---
         if snake_pos == food_pos:
             score += 10
             speed += 0.2
@@ -137,7 +151,7 @@ def game_loop():
         else:
             snake_body.pop()
 
-        # --- Collision Detection using Rects ---
+        # --- Collision Detection ---
         snake_head = pygame.Rect(snake_pos[0], snake_pos[1], CELL_SIZE, CELL_SIZE)
 
         # Collide with self
@@ -155,7 +169,7 @@ def game_loop():
             if snake_head.colliderect(pygame.Rect(stone[0], stone[1], CELL_SIZE, CELL_SIZE)):
                 game_over_screen(score)
 
-        # --- Drawing ---
+        # --- Drawing Section ---
         screen.fill(BLACK)
 
         # Draw walls
@@ -172,7 +186,10 @@ def game_loop():
         pygame.draw.rect(screen, RED, pygame.Rect(food_pos[0], food_pos[1], CELL_SIZE, CELL_SIZE))
         show_score(score)
 
+        # Update screen and control speed
         pygame.display.update()
         clock.tick(speed)
 
+
+# ---------------- Start the Game ----------------
 game_loop()
